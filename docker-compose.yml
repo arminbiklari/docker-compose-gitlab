@@ -1,0 +1,43 @@
+version: '3.5'
+services:
+  gitlab:
+    container_name: gitlab
+    image: gitlab/gitlab-ce:latest
+    restart: always
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://192.168.1.30'
+
+        gitlab_rails['gitlab_shell_ssh_port'] = 522
+
+        letsencrypt['enable'] = false
+
+        gitlab_rails['registry_enabled'] = true
+        registry_external_url 'http://192.168.1.30:5050'
+        registry_nginx['listen_port'] = 5050
+        registry_nginx['listen_https'] = false
+    ports:
+      - "4433:443"
+      - "8080:80"
+      - "522:522"
+      - "5050:5050"
+    volumes:
+      - ./config/gitlab:/etc/gitlab
+      - ./data/gitlab:/var/opt/gitlab
+      - ./logs:/var/log/gitlab
+    networks:
+      - gitlab
+  gitlab-runner:
+    image: gitlab/gitlab-runner
+    container_name: gitlab-runner
+    restart: always
+    depends_on:
+      - gitlab
+    volumes:
+      - ./config/gitlab-runner:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab
+
+networks:
+  gitlab:
